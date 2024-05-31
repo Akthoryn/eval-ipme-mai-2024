@@ -1,0 +1,31 @@
+services:
+    eval_database:
+        image: postgres
+        ports:
+            - 5432:5432
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            POSTGRES_DB: ${DB_DATABASE}
+        restart: unless-stopped
+        volumes:
+          - ".postgres:/var/lib/postgresql/data"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready", "-d", "${DB_DATABASE}"]
+            interval: 10s
+            timeout: 60s
+            retries: 5
+
+    eval_app:
+        build:
+            context: ./
+        restart: unless-stopped
+        env_file: ./.env
+        ports:
+            - "${PORT}:${PORT}"
+        command: ["node ace migration:run"]
+        depends_on:
+            - eval_database
+
+volumes:
+    .postgres:
